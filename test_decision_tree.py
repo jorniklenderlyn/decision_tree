@@ -4,6 +4,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split 
 from sklearn.metrics import accuracy_score
 from decision_tree import DecisionTree 
+from sklearn.tree import DecisionTreeClassifier
 
 
 class TestDecisionTreeIris(unittest.TestCase):
@@ -62,7 +63,6 @@ class TestDecisionTreeIris(unittest.TestCase):
         y_pred = tree.predict(self.X_test)
         score = accuracy_score(self.y_test, y_pred, normalize=True)
         self.assertGreaterEqual(score, 0.9)
-
     
     def test_iris_entropy_accuracy(self):
         tree = DecisionTree(max_depth=4, min_samples_split=2, criterion='entropy')
@@ -73,9 +73,9 @@ class TestDecisionTreeIris(unittest.TestCase):
     
     def test_full_fit_perfect_train_score(self):
         tree = DecisionTree(max_depth=1000000, min_samples_split=2)
-        tree.fit(self.X_train, self.y_train)
-        y_pred = tree.predict(self.X_test)
-        score = accuracy_score(self.y_test, y_pred)
+        tree.fit(self.X, self.y)
+        y_pred = tree.predict(self.X)
+        score = accuracy_score(self.y, y_pred)
         self.assertEqual(score, 1.0)
     
     def test_best_split_is_used_correctly(self):
@@ -109,8 +109,8 @@ class TestDecisionTreeIris(unittest.TestCase):
         tree2 = DecisionTree()
         tree1.fit(self.X_train, self.y_train)
         tree2.fit(self.X_train, self.y_train)
-        pred1 = tree1.predict(self.y_test)
-        pred2 = tree2.predict(self.y_test)
+        pred1 = tree1.predict(self.X_test)
+        pred2 = tree2.predict(self.X_test)
         np.testing.assert_array_equal(pred1, pred2)
 
 if __name__ == '__main__':

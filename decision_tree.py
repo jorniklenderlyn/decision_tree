@@ -14,6 +14,9 @@ class Node:
     
     def is_leaf(self):
         return self.value is not None
+    
+    def __str__(self):
+        return f'feature: {self.feature} treshold: {self.treshold} value: {self.value}'
 
 class DecisionTree:
     def __init__(self, max_depth=100, min_samples_split=2, criterion='gini'):
@@ -34,6 +37,8 @@ class DecisionTree:
             return 0
         counts = np.bincount(y)
         probabilities = counts / len(y)
+        probabilities = probabilities[probabilities > 0]
+        # logging.info(f'{np.log2(probabilities)} {counts} {probabilities}')
         return -np.sum(probabilities * np.log2(probabilities))
     
     def _information_gain(self, y, y_left, y_right, criterion):
@@ -62,7 +67,7 @@ class DecisionTree:
 
         n_samples, n_features = X.shape
 
-        logging.info(f'_best_split: {n_samples} {self.min_saples_split}')
+        # logging.info(f'_best_split: {n_samples} {self.min_saples_split}')
 
         if n_samples < self.min_saples_split:
             return best_feature, best_treshold
@@ -70,8 +75,10 @@ class DecisionTree:
         for feature_idx in range(n_features):
             feature_values = np.unique(X[:, feature_idx])
 
+            # logging.info(f'_best_split next_feature: feature_values_len {len(feature_values) - 1}')
+
             for i in range(len(feature_values) - 1):
-                treshold = (feature_values[i] - feature_values[i + 1]) / 2
+                treshold = (feature_values[i] + feature_values[i + 1]) / 2
 
                 left_mask = X[:, feature_idx] <= treshold
                 right_mask = X[:, feature_idx] > treshold
@@ -79,16 +86,20 @@ class DecisionTree:
                 y_left = y[left_mask]
                 y_right = y[right_mask]
 
+                # logging.info(f'_best_split treshold: {treshold} {feature_values}')
+
                 if len(y_left) == 0 or len(y_right) == 0:
                     continue
 
                 gain = self._information_gain(y, y_left, y_right, criterion=self.criterion)
 
+                # logging.info(f'_best_split iter: {gain} {best_gain} {treshold}')
+
                 if best_gain < gain:
                     best_gain = gain
                     best_treshold = treshold
                     best_feature = feature_idx
-        logging.info(f'_best_split: {best_feature} {best_treshold}')
+        # logging.info(f'_best_split: {best_feature} {best_treshold}')
         
         return best_feature, best_treshold
     
@@ -103,7 +114,7 @@ class DecisionTree:
         
         best_feature, treshold = self._best_split(X, y)
 
-        logging.info(str(best_feature) + ' ' + str(treshold))
+        # logging.info(str(best_feature) + ' ' + str(treshold))
 
         if best_feature is None:
             values, counts = np.unique(y, return_counts=True)
@@ -117,7 +128,7 @@ class DecisionTree:
         left_subtree = self._build_tree(X[left_mask], y[left_mask], depth=depth + 1)
         right_subtree = self._build_tree(X[right_mask], y[right_mask], depth=depth + 1)
 
-        return Node(value=treshold, feature=best_feature, left=left_subtree, right=right_subtree)
+        return Node(treshold=treshold, feature=best_feature, left=left_subtree, right=right_subtree)
 
     def fit(self, X, y):
         self.root = self._build_tree(X, y)
@@ -128,7 +139,10 @@ class DecisionTree:
         if node.is_leaf():
             return node.value
         
-        if x <= node.treshold:
+        # logging.info(f'{node}')
+        # logging.info(f'{node.feature} {x}')
+        
+        if x[node.feature] <= node.treshold:
             return self._predict_single(x, node.left)
         else:
             return self._predict_single(x, node.right)
